@@ -24,14 +24,10 @@ class AuthController extends Controller
                 return response()->json([
                     'status_code' => 500,
                     'message' => 'Unauthorized'
-                ]);
+                ], 400);
             }
 
             $user = User::where('email', $request->email)->first();
-
-            if (!Hash::check($request->password, $user->password, [])) {
-                throw new \Exception('Error in Login');
-            }
 
             $tokenResult = $user->createToken('authToken')->plainTextToken;
 
@@ -45,7 +41,38 @@ class AuthController extends Controller
                 'status_code' => 500,
                 'message' => 'Error in Login',
                 'error' => $error,
-            ]);
+            ], 400);
         }
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'email|required',
+            'password' => 'required',
+            'password_confirmation' => 'required'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => 'Error in register',
+                'error' => 'email is used',
+            ], 400);
+        }
+
+        $createdUser = User::create([
+            'email' => $request->email,
+            'name' => $request->name,
+            'password' => $request->password
+        ]);
+
+        return response()->json([
+            'status_code' => 201,
+            'user' => $createdUser
+        ]);
     }
 }
